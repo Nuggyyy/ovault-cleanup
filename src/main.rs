@@ -15,7 +15,7 @@ struct Directories {
     vault: String,
 }
 
-fn get_attachments(dir: &String) -> Vec<String> {
+fn get_attachments(dir: &str) -> Vec<String> {
     let mut attachments: Vec<String> = Vec::new();
     for entry in WalkDir::new(dir) {
         let entry = entry.unwrap();
@@ -31,7 +31,7 @@ fn build_regex_string(attachments: &[String]) -> String {
     format!("({})", escaped.join("|"))
 }
 
-fn find_mentioned(re: &Regex, vault: &String) -> HashSet<String> {
+fn find_mentioned(re: &Regex, vault: &str) -> HashSet<String> {
     let mut mentioned = HashSet::new();
 
     for entry in WalkDir::new(vault)
