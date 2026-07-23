@@ -52,7 +52,7 @@ fn find_mentioned(re: &Regex, vault: &str) -> HashSet<String> {
 
 fn delete(unmentioned: &Vec<&String>, attachments_dir: &str) -> std::io::Result<()> {
     for attachment in unmentioned {
-        let full_path = String::from("./") + attachments_dir + attachment.as_str();
+        let full_path = attachments_dir.to_owned() + attachment.as_str();
         println!("Do you want to delete {full_path}? (y/n)");
         let mut decision = String::new();
         io::stdin()
@@ -62,7 +62,7 @@ fn delete(unmentioned: &Vec<&String>, attachments_dir: &str) -> std::io::Result<
         let decision = decision.trim().to_lowercase();
 
         if decision == "y" {
-            fs::remove_file(attachment)?;
+            fs::remove_file(full_path)?;
             println!("File deleted.");
         } else {
             println!("File not deleted.");
