@@ -9,7 +9,7 @@ use argh::FromArgs;
 #[derive(FromArgs)]
 #[argh(description = "{command_name} is a tool to provide directory paths. it is required to provide both --attachments_directory and --vault.")]
 struct Directories {
-    #[argh(option, description = "the directory path for the attachments. relative path should suffice.")]
+    #[argh(option, description = "the directory path for the attachments. relative path should suffice. important: make sure the path ends with '/' for MacOS/Linux and with '\\' for Windows, otherwise delete function won't work.")]
     attachments_dir: String,
 
     #[argh(option, description = "the directory path for the entire vault. relative path should suffice.")]
@@ -52,8 +52,8 @@ fn find_mentioned(re: &Regex, vault: &str) -> HashSet<String> {
 
 fn delete(unmentioned: &Vec<&String>, attachments_dir: &str) -> std::io::Result<()> {
     for attachment in unmentioned {
-        let full_path = attachments_dir.to_owned() + attachment.as_str();
-        println!("Do you want to delete {full_path}? (y/n)");
+        let file_path = attachments_dir.to_owned() + attachment.as_str();
+        println!("Do you want to delete {file_path}? (y/n)");
         let mut decision = String::new();
         io::stdin()
             .read_line(&mut decision)
@@ -62,7 +62,7 @@ fn delete(unmentioned: &Vec<&String>, attachments_dir: &str) -> std::io::Result<
         let decision = decision.trim().to_lowercase();
 
         if decision == "y" {
-            fs::remove_file(full_path)?;
+            fs::remove_file(file_path)?;
             println!("File deleted.");
         } else {
             println!("File not deleted.");
@@ -72,18 +72,31 @@ fn delete(unmentioned: &Vec<&String>, attachments_dir: &str) -> std::io::Result<
 }
 
 fn main() {
+    // parses command-line arguments
     let args: Directories = argh::from_env();
+
+    // creates a list of attachments
     let attachments: Vec<String> = get_attachments(&args.attachments_dir);
     println!("attachments: {:#?}", &attachments);
+
+    // builds a regex pattern-string with the list of attachments, in order to traverse the obsidian vault only once
     let pattern = build_regex_string(&attachments);
     println!("regex pattern: {}", &pattern);
+
+    // creates the regex and walks through the obsidian vault to find mentions for each attachment
     let re = Regex::new(&pattern).unwrap();
     let mentioned = find_mentioned(&re, &args.vault);
     println!("mentioned attachments: {:#?}", &mentioned);
+
+    // build the list of unmentioned attachments, to know which ones can be deleted
     let unmentioned: Vec<&String> = attachments.iter()
         .filter(|a| !mentioned.contains(a.as_str()))
         .collect();
     println!("attachments to delete: {:#?}", &unmentioned);
+
+    // the deletion function
     let result = delete(&unmentioned, &args.attachments_dir);
-    println!("{:#?}", &result);
+    if let Err(..) = result {
+        println!("{:#?}", result)
+    }
 }
