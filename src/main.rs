@@ -13,7 +13,7 @@ struct Directories {
     attachments_dir: String,
 
     #[argh(option, description = "the directory path for the entire vault. relative path should suffice.")]
-    vault: String,
+    vault: Option<String>,
 }
 
 fn get_attachments(dir: &str) -> Vec<String> {
@@ -74,6 +74,12 @@ fn delete(unmentioned: &Vec<&String>, attachments_dir: &str) -> std::io::Result<
 fn main() {
     // parses command-line arguments
     let args: Directories = argh::from_env();
+    let mut vault = String::new();
+    if let Some(dir) = args.vault {
+        vault += dir.as_str();
+    } else {
+        vault += ".";
+    }
 
     // creates a list of attachments
     let attachments: Vec<String> = get_attachments(&args.attachments_dir);
@@ -85,7 +91,7 @@ fn main() {
 
     // creates the regex and walks through the obsidian vault to find mentions for each attachment
     let re = Regex::new(&pattern).unwrap();
-    let mentioned = find_mentioned(&re, &args.vault);
+    let mentioned = find_mentioned(&re, &vault);
     println!("mentioned attachments: {:#?}", &mentioned);
 
     // build the list of unmentioned attachments, to know which ones can be deleted
